@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes.auth import router as auth_router
 
+from routes.wallet import router as wallet_router
+from routes.transactions import router as transactions_router
+
 app = FastAPI(title="Payshield API")
 
 # Allows your frontend (running on a different port during local dev,
@@ -17,7 +20,8 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
-
+app.include_router(wallet_router)
+app.include_router(transactions_router)
 
 @app.get("/health")
 def health():
