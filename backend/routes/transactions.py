@@ -6,6 +6,13 @@ from auth.phone_hash import hash_phone
 from db.database import get_db_connection
 from services.wallet_service import debit_wallet, credit_wallet
 
+from services.alias_service import resolve_alias #added my maithri
+from services.payment_orchestrator import (
+    validate_payer,
+    validate_payee,
+    create_payment,
+)
+
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
@@ -18,6 +25,16 @@ class PaymentResponse(BaseModel):
     transaction_id: str
     status: str
     amount_paise: int
+
+class PayByAliasRequest(BaseModel): #added my maithri
+    alias_string: str
+    amount_paise: int = Field(gt=0)
+
+class ReceiptResponse(BaseModel):  # <-- add it here
+    transaction_id: str
+    amount_paise: int
+    status: str
+    created_at: str
 
 
 @router.post("/pay", response_model=PaymentResponse)
@@ -91,4 +108,50 @@ def pay(
         transaction_id=str(transaction_id),
         status="completed",
         amount_paise=payload.amount_paise,
+    )
+
+@router.post("/pay-by-alias", response_model=PaymentResponse) #added my maithri
+def pay_by_alias(
+    payload: PayByAliasRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    sender_user_id = current_user["user_id"]
+
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            recipient_user_id = resolve_alias(cur, payload.alias_string)
+
+            if str(recipient_user_id) == sender_user_id:
+                raise HTTPException(status_code=400, detail="Cannot pay yourself")
+
+            sender_wallet_id = validate_payer(cur, sender_user_id)
+            recipient_wallet_id = validate_payee(cur, recipient_user_id)
+
+            transaction_id = create_payment(
+                cur,
+                sender_wallet_id,
+                recipient_wallet_id,
+                payload.amount_paise,
+            )
+
+    return PaymentResponse(
+        transaction_id=str(transaction_id),
+        status="completed",
+        amount_paise=payload.amount_paise,
+    )
+
+@router.get("/{transaction_id}/receipt", response_model=ReceiptResponse)
+def get_receipt(transaction_id: str, current_user: dict = Depends(get_current_user)):
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, amount, status, created_at FROM transactions WHERE id = %s",
+                (transaction_id,),
+            )
+            row = cur.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    return ReceiptResponse(
+        transaction_id=str(row[0]), amount_paise=row[1],
+        status=row[2], created_at=row[3].isoformat(),
     )
