@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from auth.phone_hash import hash_phone
 from auth.jwt_handler import create_token
 from db.database import get_db_connection
+from auth.middleware import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,3 +43,8 @@ def login(payload: LoginRequest):
     token = create_token(user_id=str(user_id), phone_hash=stored_phone_hash)
 
     return LoginResponse(token=token)
+
+
+@router.get("/me")
+def me(current_user: dict = Depends(get_current_user)):
+    return current_user
