@@ -82,6 +82,34 @@ class AuditLogsResponse(BaseModel):
     total: int
 
 
+class PendingKycRecord(BaseModel):
+    id: str
+    user_id: str
+    legal_name: str
+    aadhaar_number: str
+    pan_number: str
+    document_url: str
+    status: str
+    created_at: str
+
+
+class PendingKycResponse(BaseModel):
+    records: list[PendingKycRecord]
+    total: int
+
+
+class ApproveKycResponse(BaseModel):
+    success: bool
+    message: str
+    status: str
+
+
+class RejectKycResponse(BaseModel):
+    success: bool
+    message: str
+    status: str
+
+
 @router.post("/kyc/upload", response_model=KycUploadResponse, status_code=201)
 def kyc_upload(
     payload: KycUploadRequest,
@@ -292,4 +320,132 @@ def audit_logs(
     return AuditLogsResponse(entries=entries, total=total_count)
 
 
+@router.get("/admin/kyc/pending", response_model=PendingKycResponse)
+def get_pending_kyc(
+    current_admin: dict = Depends(get_admin_user),
+    skip: int = 0,
+    limit: int = 50
+):
+    """
+    Get all pending KYC records. Admin users only.
+    Returns paginated results.
+    """
+    # Validate pagination parameters
+    if skip < 0:
+        skip = 0
+    if limit < 1:
+        limit = 1
+    if limit > 500:
+        limit = 500  # Max 500 per page
 
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            # Get total count of pending records
+            cur.execute("SELECT COUNT(*) FROM kyc_records WHERE status = %s", ("pending",))
+            total_count = cur.fetchone()[0]
+
+            # Fetch paginated pending KYC records
+            cur.execute(
+                """SELECT id, user_id, legal_name, aadhaar_number, pan_number, document_url, status, created_at 
+                   FROM kyc_records 
+                   WHERE status = %s
+                   ORDER BY created_at ASC
+                   LIMIT %s OFFSET %s
+                """,
+                ("pending", limit, skip)
+            )
+            rows = cur.fetchall()
+
+    records = [
+        PendingKycRecord(
+            id=str(row[0]),
+            user_id=str(row[1]),
+            legal_name=row[2],
+            aadhaar_number=row[3],
+            pan_number=row[4],
+            document_url=row[5],
+            status=row[6],
+            created_at=str(row[7])
+        )
+        for row in rows
+    ]
+
+    return PendingKycResponse(records=records, total=total_count)
+
+
+@router.post("/admin/kyc/{user_id}/approve", response_model=ApproveKycResponse)
+def approve_kyc(
+    user_id: UUID,
+    current_admin: dict = Depends(get_admin_user)
+):
+    """
+    Approve KYC for a user. Admin users only.
+    Updates the user's most recent KYC record status to 'verified'.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Update the most recent KYC record for this user
+                cur.execute(
+                    """UPDATE kyc_records 
+                       SET status = %s, verified_at = now()
+                       WHERE user_id = %s AND status = %s
+                       ORDER BY created_at DESC
+                       LIMIT 1
+                    """,
+                    ("verified", str(user_id), "pending")
+                )
+                
+                if cur.rowcount == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="No pending KYC record found for this user"
+                    )
+        
+        return ApproveKycResponse(success=True, message="KYC approved successfully", status="verified")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to approve KYC"
+        )
+
+
+@router.post("/admin/kyc/{user_id}/reject", response_model=RejectKycResponse)
+def reject_kyc(
+    user_id: UUID,
+    current_admin: dict = Depends(get_admin_user)
+):
+    """
+    Reject KYC for a user. Admin users only.
+    Updates the user's most recent pending KYC record status to 'rejected'.
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Update the most recent pending KYC record for this user
+                cur.execute(
+                    """UPDATE kyc_records 
+                       SET status = %s
+                       WHERE user_id = %s AND status = %s
+                       ORDER BY created_at DESC
+                       LIMIT 1
+                    """,
+                    ("rejected", str(user_id), "pending")
+                )
+                
+                if cur.rowcount == 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="No pending KYC record found for this user"
+                    )
+        
+        return RejectKycResponse(success=True, message="KYC rejected successfully", status="rejected")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to reject KYC"
+        )
