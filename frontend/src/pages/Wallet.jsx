@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, QrCode, History, User, Home, ArrowDownToLine } from "lucide-react";
+import { Send, QrCode, History, User, Home, ArrowDownToLine, Gift, Zap } from "lucide-react";
 import client from "../api/client";
 
 export default function Wallet() {
@@ -79,6 +79,22 @@ export default function Wallet() {
               onClick={() => navigate("/activity")}
             />
           </div>
+          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+          <OvalBadge
+    icon={<Gift size={13} />}
+    label="Rewards"
+    sublabel="2 new"
+    tone="signal"
+    onClick={() => navigate("/rewards")}
+  />
+  <OvalBadge
+    icon={<Zap size={13} />}
+    label="Lite mode"
+    sublabel="Enabled"
+    tone="default"
+    onClick={() => navigate("/lite")}
+  />
+</div>
         </div>
 
         {/* Alias identity reminder — reinforces the privacy pitch */}
@@ -134,6 +150,34 @@ function NavItem({ icon, label, active }) {
     >
       {icon}
       <span className="text-[10px] font-medium">{label}</span>
+    </button>
+  );
+}
+
+function OvalBadge({ icon, label, sublabel, tone = "default", onClick }) {
+  const tones = {
+    default: "bg-ink/5 text-ink",
+    signal: "bg-signal/10 text-signal border border-signal/30",
+    paper: "bg-paper text-ink",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={
+        "flex items-center gap-2 rounded-full px-4 py-2 transition hover:brightness-95 " +
+        tones[tone]
+      }
+    >
+      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10">
+        {icon}
+      </span>
+      <span className="flex flex-col items-start leading-tight">
+        <span className="text-xs font-semibold">{label}</span>
+        {sublabel && (
+          <span className="text-[10px] opacity-70">{sublabel}</span>
+        )}
+      </span>
     </button>
   );
 }
