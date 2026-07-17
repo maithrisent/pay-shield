@@ -70,7 +70,7 @@ def pay(
             if str(recipient_user_id) == sender_user_id:
                 raise HTTPException(status_code=400, detail="Cannot pay yourself")
 
-            payer_alias = get_or_create_alias(cur, sender_user_id, recipient_user_id)
+            #payer_alias = get_or_create_alias(cur, sender_user_id, recipient_user_id)
             
             cur.execute(
                 "SELECT id FROM wallets WHERE user_id = %s",
@@ -103,7 +103,7 @@ def pay(
                 VALUES (%s, %s, %s, 'completed')
                 RETURNING id
                 """,
-                (sender_wallet_id, recipient_wallet_id, payload.amount_paise, payer_alias),
+                (sender_wallet_id, recipient_wallet_id, payload.amount_paise),
             )
             transaction_id = cur.fetchone()[0]
 
