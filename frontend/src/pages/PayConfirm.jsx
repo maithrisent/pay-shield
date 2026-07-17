@@ -13,15 +13,15 @@ export default function PayConfirm() {
     return null;
   }
 
-  const { aliasString, amountPaise } = state;
+  const { phoneNumber, amountPaise } = state;
 
   async function handleConfirm() {
     setError("");
     setLoading(true);
     try {
-      const res = await client.post("/transactions/pay-by-alias", {
-        alias_string: aliasString,
-        amount_paise: amountPaise,
+      const res = await client.post("/transactions/pay", {
+      to_phone_number: phoneNumber,
+      amount_paise: amountPaise,
       });
       navigate("/pay/success", { state: res.data });
     } catch (err) {
@@ -40,7 +40,7 @@ export default function PayConfirm() {
 
         <div className="mt-6 rounded-2xl bg-paper p-6 shadow-2xl">
           <p className="text-sm text-muted">Paying</p>
-          <p className="mt-1 font-mono text-lg text-ink">{aliasString}</p>
+          <p className="mt-1 font-mono text-lg text-ink">{phoneNumber}</p>
 
           <p className="mt-4 text-sm text-muted">Amount</p>
           <p className="mt-1 font-mono text-3xl font-semibold text-ink">
@@ -48,8 +48,7 @@ export default function PayConfirm() {
           </p>
 
           <p className="mt-4 text-xs text-white/40">
-            You won't see this person's name — that's the point. Double-check the
-            alias before confirming.
+            You won't see the recipient's name. Double-check the phone number before confirming.
           </p>
 
           {error && <p className="mt-4 text-sm text-alert">{error}</p>}
