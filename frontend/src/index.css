@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Tailwind v4 generates utility classes directly from these variables —
+   defining --color-ink here is what makes bg-ink, text-ink, border-ink
+   etc. available, same for --font-display -> font-display, and so on.
+   This replaces the old tailwind.config.js entirely. */
+@theme {
+  --color-ink: #12161c;
+  --color-paper: #f6f5f1;
+  --color-signal: #2fa88c;
+  --color-redact: #0b0d10;
+  --color-muted: #5b6472;
+  --color-alert: #c1553d;
+
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
