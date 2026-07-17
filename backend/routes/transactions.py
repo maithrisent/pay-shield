@@ -5,6 +5,7 @@ from auth.middleware import get_current_user
 from auth.phone_hash import hash_phone
 from db.database import get_db_connection
 from services.wallet_service import debit_wallet, credit_wallet
+from services.alias_service import get_or_create_alias
 
 from services.alias_service import resolve_alias #added my maithri
 from services.payment_orchestrator import (
@@ -69,6 +70,8 @@ def pay(
             if str(recipient_user_id) == sender_user_id:
                 raise HTTPException(status_code=400, detail="Cannot pay yourself")
 
+            payer_alias = get_or_create_alias(cur, sender_user_id, recipient_user_id)
+            
             cur.execute(
                 "SELECT id FROM wallets WHERE user_id = %s",
                 (sender_user_id,),
@@ -100,7 +103,7 @@ def pay(
                 VALUES (%s, %s, %s, 'completed')
                 RETURNING id
                 """,
-                (sender_wallet_id, recipient_wallet_id, payload.amount_paise),
+                (sender_wallet_id, recipient_wallet_id, payload.amount_paise, payer_alias),
             )
             transaction_id = cur.fetchone()[0]
 
