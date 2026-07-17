@@ -6,6 +6,7 @@ from routes.auth import router as auth_router
 from routes.wallet import router as wallet_router
 from routes.transactions import router as transactions_router
 from routers.alias import router as alias_router #added by maithri
+from compliance.routes.compliance import router as compliance_router
 
 
 app = FastAPI(title="Payshield API")
@@ -26,6 +27,7 @@ app.include_router(wallet_router)
 app.include_router(transactions_router)
 
 app.include_router(alias_router) #added by maithri
+app.include_router(compliance_router)
 
 @app.get("/health")
 def health():
