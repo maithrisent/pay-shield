@@ -4,6 +4,7 @@ import client from "../api/client";
 
 export default function Wallet() {
   const [balance, setBalance] = useState(null);
+  const [kycStatus, setKycStatus] = useState(null);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -12,6 +13,11 @@ export default function Wallet() {
       .get("/wallet/balance")
       .then((res) => setBalance(res.data))
       .catch(() => setError("Couldn't load your balance."));
+
+    client
+      .get("/compliance/kyc/status")
+      .then((res) => setKycStatus(res.data.status))
+      .catch(() => setKycStatus("unknown"));
   }, []);
 
   function handleLogout() {
@@ -51,6 +57,27 @@ export default function Wallet() {
               })}
             </p>
           )}
+        </div>
+
+        <div className="mt-4 rounded-2xl bg-paper p-6">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-muted">KYC Verification</p>
+            <span className={`text-xs font-semibold px-2 py-1 rounded ${
+              kycStatus === "verified"
+                ? "bg-signal/20 text-signal"
+                : kycStatus === "pending"
+                ? "bg-white/10 text-ink/60"
+                : "bg-alert/10 text-alert"
+            }`}>
+              {kycStatus === "verified" ? "Verified" : kycStatus === "pending" ? "Pending" : "Not Submitted"}
+            </span>
+          </div>
+          <button
+            onClick={() => navigate("/kyc")}
+            className="w-full bg-signal text-ink hover:bg-signal/90 font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+          >
+            {kycStatus === "verified" ? "Update KYC" : "Complete KYC"}
+          </button>
         </div>
       </div>
     </div>

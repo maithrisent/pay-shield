@@ -6,6 +6,8 @@ import GetPaid from "./pages/GetPaid";
 import Pay from "./pages/Pay";
 import PayConfirm from "./pages/PayConfirm";
 import PaySuccess from "./pages/PaySuccess";
+import KycUpload from "./pages/KycUpload";
+import AdminDisclose from "./pages/AdminDisclose";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -20,6 +22,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Wallet />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/kyc"
+          element={
+            <ProtectedRoute>
+              <KycUpload />
             </ProtectedRoute>
           }
         />
@@ -52,6 +62,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <PaySuccess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/disclose"
+          element={
+            <ProtectedRoute>
+              <AdminDisclose />
             </ProtectedRoute>
           }
         />  
